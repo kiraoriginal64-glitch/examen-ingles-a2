@@ -1,33 +1,15 @@
 import { supabase } from './supabase.js'; // Importamos la conexión
 
-document.getElementById('registro-form').addEventListener('submit', async (e) => {
-  e.preventDefault(); // Evita que la página se recargue
+document.getElementById('registro-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
 
-  const errorMsg = document.getElementById('error-msg');
-  errorMsg.style.display = 'none';
-
-  // Obtenemos los valores que ingresó el estudiante
-  const nombre = document.getElementById('nombre').value;
-  const matricula = document.getElementById('matricula').value;
-  const carrera = document.getElementById('carrera').value;
-  const grado = document.getElementById('grado').value;
-  const grupo = document.getElementById('grupo').value;
+  // 1. RECOLECTAR LOS DATOS (Esta es la línea que faltaba)
+  const formData = new FormData(event.target);
+  const formDataObj = Object.fromEntries(formData.entries());
+  formDataObj.status = 'in_progress'; // Inicializamos su estado
 
   try {
-    // Insertamos los datos en la tabla 'exam_attempts'
-    const { data, error } = await supabase
-      .from('exam_attempts')
-      .insert([
-        { 
-          nombre: nombre, 
-          matricula: matricula, 
-          carrera: carrera, 
-          grado: grado, 
-          grupo: grupo 
-        }
-      ])
-      .select();
-// 1. Primero verificamos si la matrícula ya existe
+    // 2. Verificar si la matrícula ya existe
     const { data: existingAttempt, error: checkError } = await supabase
       .from('exam_attempts')
       .select('id, status')
@@ -42,9 +24,8 @@ document.getElementById('registro-form').addEventListener('submit', async (e) =>
       }
       // Si existe y no está completado, recuperamos ese ID
       attemptId = existingAttempt.id;
-      console.log("Recuperando intento existente.");
     } else {
-      // 2. Si no existe, creamos uno nuevo
+      // Si no existe, creamos uno nuevo
       const { data, error } = await supabase
         .from('exam_attempts')
         .insert([formDataObj])
@@ -56,25 +37,16 @@ document.getElementById('registro-form').addEventListener('submit', async (e) =>
 
     sessionStorage.setItem('exam_attempt_id', attemptId);
     window.location.href = '/examen.html';
-    if (error) throw error;
 
-    
-    // Si es exitoso, guardamos el ID del intento para que no se pierda si recarga
-    attemptId = data[0].id;
-    sessionStorage.setItem('exam_attempt_id', attemptId);
-    
-    // Redirigir automáticamente a la pantalla del examen
-    window.location.href = '/examen.html';
-
- } catch (error) {
-    // ESTO ES LO NUEVO: Nos imprimirá el error completo en la consola
-    console.error('ERROR COMPLETO DE SUPABASE:', error);
-    
-    if (error.code === '23505') { 
-        errorMsg.textContent = 'Esta matrícula ya ha registrado un intento de examen.';
+  } catch (error) {
+    // Esto mostrará el error en rojo debajo del botón
+    const errorMsg = document.getElementById('error-msg') || document.querySelector('.error-message');
+    if (errorMsg) {
+        errorMsg.textContent = 'Error: ' + error.message;
+        errorMsg.style.display = 'block';
+        errorMsg.style.color = 'red';
     } else {
-        errorMsg.textContent = `Error: ${error.message || 'Error desconocido'}`;
+        alert('Error: ' + error.message);
     }
-    errorMsg.style.display = 'block';
   }
 });
