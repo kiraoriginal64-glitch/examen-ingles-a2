@@ -46,20 +46,30 @@ window.addEventListener("blur", registrarInfraccion);
 document.addEventListener('contextmenu', event => event.preventDefault());
 // --------------------------------------------------------
 
-// Lógica del temporizador
-let tiempoRestante = 60 * 60; // 60 minutos
+// Lógica del temporizador (Basada en Timestamp absoluto)
+const DURACION_MINUTOS = 60;
 const timeDisplay = document.getElementById('time-display');
 
+// Obtenemos o creamos la hora límite
+let endTime = sessionStorage.getItem('exam_end_time');
+if (!endTime) {
+  endTime = Date.now() + (DURACION_MINUTOS * 60 * 1000);
+  sessionStorage.setItem('exam_end_time', endTime);
+}
+
 const timerInterval = setInterval(() => {
-  tiempoRestante--;
-  const minutos = Math.floor(tiempoRestante / 60);
-  const segundos = tiempoRestante % 60;
-  timeDisplay.textContent = `${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`;
+  const ahora = Date.now();
+  let tiempoRestante = Math.floor((endTime - ahora) / 1000);
 
   if (tiempoRestante <= 0) {
     clearInterval(timerInterval);
+    timeDisplay.textContent = "00:00";
     alert("¡Se acabó el tiempo!");
-    document.getElementById('quiz-form').submit(); // Envía automáticamente
+    document.getElementById('quiz-form').dispatchEvent(new Event('submit')); 
+  } else {
+    const minutos = Math.floor(tiempoRestante / 60);
+    const segundos = tiempoRestante % 60;
+    timeDisplay.textContent = `${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`;
   }
 }, 1000);
 
