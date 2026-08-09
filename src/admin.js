@@ -1,22 +1,30 @@
 import { supabase } from './supabase.js';
 
-// Hacemos la función global para que el botón HTML pueda llamarla
 window.cargarResultados = async function() {
-  const tabla = document.getElementById('tabla-resultados');
-  const filtroCarrera = document.getElementById('filtro-carrera').value;
-  const filtroGrupo = document.getElementById('filtro-grupo').value.trim().toLowerCase();
+  // 1. Buscamos específicamente el "cuerpo" de la tabla, para no borrar tus encabezados azules
+  const tablaBody = document.getElementById('tabla-body');
+  
+  if (!tablaBody) {
+      console.error("No se encontró el espacio para la tabla.");
+      return;
+  }
 
-  // Cambiamos a colspan 7 por la nueva columna
-  tabla.innerHTML = '<tr><td colspan="7" style="text-align: center;">Cargando resultados...</td></tr>';
+  // 2. Leemos los filtros con "paracaídas" (si no existen, no pasa nada)
+  const selectCarrera = document.getElementById('filtro-carrera');
+  const filtroCarrera = selectCarrera ? selectCarrera.value : '';
+
+  const inputGrupo = document.getElementById('filtro-grupo');
+  const filtroGrupo = inputGrupo ? inputGrupo.value.trim().toLowerCase() : '';
+
+  // 3. Mostramos mensaje de carga
+  tablaBody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">Cargando resultados...</td></tr>';
 
   try {
-    // Iniciamos la consulta a Supabase
     let query = supabase
       .from('exam_attempts')
       .select('*')
-      .order('score', { ascending: false }); // Ordenados por mejor calificación
+      .order('score', { ascending: false });
 
-    // Aplicamos los filtros si el usuario seleccionó alguno
     if (filtroCarrera) {
       query = query.eq('carrera', filtroCarrera);
     }
@@ -28,56 +36,45 @@ window.cargarResultados = async function() {
 
     if (error) throw error;
 
-    tabla.innerHTML = ''; // Limpiamos
+    tablaBody.innerHTML = ''; // Limpiamos el mensaje de carga
 
     if (resultados.length === 0) {
-      tabla.innerHTML = '<tr><td colspan="7" style="text-align: center;">No hay resultados para mostrar.</td></tr>';
+      tablaBody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">No hay resultados para mostrar.</td></tr>';
       return;
     }
 
-    // === CONFIGURACIÓN DE CALIFICACIÓN ===
-    // Cambia este número por tu calificación mínima real para pasar
-    const minimoAprobatorio = 60; 
+    // Cambia este número por tu calificación mínima
+    const minimoAprobatorio = 60;
 
-    // Inyectamos los resultados en la tabla HTML
     resultados.forEach(alumno => {
-      
-      // === LÓGICA DE APROBADO / REPROBADO ===
       let estatusAprobacion = '';
-      
-      // Si aún no tiene calificación (está haciendo el examen)
       if (alumno.score === null) {
          estatusAprobacion = '<span style="color: gray;">Pendiente</span>';
-      } 
-      // Si su puntaje es mayor o igual al mínimo
-      else if (alumno.score >= minimoAprobatorio) {
+      } else if (alumno.score >= minimoAprobatorio) {
          estatusAprobacion = '<span style="color: #10B981; font-weight: bold;">Aprobado ✅</span>';
-      } 
-      // Si es menor
-      else {
+      } else {
          estatusAprobacion = '<span style="color: #EF4444; font-weight: bold;">Reprobado ❌</span>';
       }
 
       const fila = `
         <tr>
-          <td><strong>${alumno.matricula}</strong></td>
-          <td>${alumno.nombre}</td>
-          <td>${alumno.carrera}</td>
-          <td>${alumno.grado ? alumno.grado : '-'} - ${alumno.grupo ? alumno.grupo.toUpperCase() : '-'}</td>
-          <td><strong>${alumno.score !== null ? alumno.score : '-'}</strong></td>
-          <td>${alumno.status === 'completed' ? '✅ Finalizado' : '⏳ En progreso'}</td>
-          <!-- INYECTAMOS LA NUEVA COLUMNA AQUÍ -->
-          <td>${estatusAprobacion}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #ddd;"><strong>${alumno.matricula || '-'}</strong></td>
+          <td style="padding: 10px; border-bottom: 1px solid #ddd;">${alumno.nombre || '-'}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #ddd;">${alumno.carrera || '-'}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #ddd;">${alumno.grado || '-'} - ${alumno.grupo ? alumno.grupo.toUpperCase() : '-'}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #ddd;"><strong>${alumno.score !== null ? alumno.score : '-'}</strong></td>
+          <td style="padding: 10px; border-bottom: 1px solid #ddd;">${alumno.status === 'completed' ? '✅ Finalizado' : '⏳ En progreso'}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #ddd;">${estatusAprobacion}</td>
         </tr>
       `;
-      tabla.innerHTML += fila;
+      tablaBody.innerHTML += fila;
     });
 
   } catch (error) {
     console.error("Error al cargar datos:", error);
-    tabla.innerHTML = '<tr><td colspan="7" style="text-align: center; color: red;">Error al conectar con la base de datos.</td></tr>';
+    // Si hay un error, ahora lo imprimirá en la pantalla para que sepamos qué es
+    tablaBody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: red; padding: 20px;">Error de conexión: ${error.message}</td></tr>`;
   }
 }
 
-// Cargar los datos automáticamente al abrir la página
 document.addEventListener('DOMContentLoaded', cargarResultados);
