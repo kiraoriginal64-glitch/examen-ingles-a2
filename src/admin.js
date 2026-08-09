@@ -63,7 +63,7 @@ window.cargarResultados = async function() {
           <td><strong>${alumno.matricula}</strong></td>
           <td>${alumno.nombre}</td>
           <td>${alumno.carrera}</td>
-          <td>${alumno.grado} - ${alumno.grupo.toUpperCase()}</td>
+          <td>${alumno.grado ? alumno.grado : '-'} - ${alumno.grupo ? alumno.grupo.toUpperCase() : '-'}</td>
           <td><strong>${alumno.score !== null ? alumno.score : '-'}</strong></td>
           <td>${alumno.status === 'completed' ? '✅ Finalizado' : '⏳ En progreso'}</td>
           <!-- INYECTAMOS LA NUEVA COLUMNA AQUÍ -->
