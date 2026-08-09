@@ -27,7 +27,35 @@ document.getElementById('registro-form').addEventListener('submit', async (e) =>
         }
       ])
       .select();
+// 1. Primero verificamos si la matrícula ya existe
+    const { data: existingAttempt, error: checkError } = await supabase
+      .from('exam_attempts')
+      .select('id, status')
+      .eq('matricula', formDataObj.matricula)
+      .single();
 
+    let attemptId;
+
+    if (existingAttempt) {
+      if (existingAttempt.status === 'completed') {
+        throw new Error('Esta matrícula ya finalizó su examen.');
+      }
+      // Si existe y no está completado, recuperamos ese ID
+      attemptId = existingAttempt.id;
+      console.log("Recuperando intento existente.");
+    } else {
+      // 2. Si no existe, creamos uno nuevo
+      const { data, error } = await supabase
+        .from('exam_attempts')
+        .insert([formDataObj])
+        .select();
+      
+      if (error) throw error;
+      attemptId = data[0].id;
+    }
+
+    sessionStorage.setItem('exam_attempt_id', attemptId);
+    window.location.href = '/examen.html';
     if (error) throw error;
 
     
