@@ -60,7 +60,7 @@ document.getElementById('registro-form').addEventListener('submit', async (e) =>
 
     
     // Si es exitoso, guardamos el ID del intento para que no se pierda si recarga
-    const attemptId = data[0].id;
+    attemptId = data[0].id;
     sessionStorage.setItem('exam_attempt_id', attemptId);
     
     // Redirigir automáticamente a la pantalla del examen
